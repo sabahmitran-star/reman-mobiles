@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>متجر الموبايلات العصري</title>
+<style>
+:root {
+  --bg-color:#f0f2f5;
+  --text-color:#000;
+  --header-gradient:linear-gradient(90deg,#007bff,#00aaff);
+  --logo-height:150px;
+  --logo-radius:20px;
+  --product-bg:#fff;
+  --product-radius:15px;
+  --product-shadow:0 4px 15px rgba(0,0,0,0.1);
+  --product-img-height:250px;
+  --product-font-size:16px;
+  --whatsapp-color:#25D366;
+}
+
+body{
+  font-family:'Arial',sans-serif;
+  margin:0;
+  background:var(--bg-color);
+  color:var(--text-color);
+  transition:0.3s;
+}
+
+header{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:var(--header-gradient);
+  padding:20px;
+  border-radius:0 0 20px 20px;
+  box-shadow:0 3px 10px rgba(0,0,0,0.1);
+  transition:0.3s;
+}
+
+#storeLogo{
+  height:var(--logo-height);
+  border-radius:var(--logo-radius);
+  cursor:pointer;
+  transition:0.3s;
+}
+
+#storeDesc{
+  margin-top:10px;
+  color:#fff;
+  font-size:18px;
+  text-align:center;
+}
+
+#productList{
+  display:grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap:25px;
+  padding:25px;
+}
+
+.product{
+  background: var(--product-bg);
+  border-radius: var(--product-radius);
+  overflow:hidden;
+  box-shadow: var(--product-shadow);
+  text-align:center;
+  cursor:pointer;
+  transition:0.3s;
+  position: relative;
+}
+
+.product:hover{
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.product img{
+  width:100%;
+  height: var(--product-img-height);
+  object-fit: cover;
+  border-bottom:1px solid #eee;
+}
+
+.product-name{
+  padding:10px;
+  font-weight:bold;
+  font-size: var(--product-font-size);
+  color:#333;
+}
+
+.product-price{
+  color:#007bff;
+  font-weight:bold;
+  margin-bottom:8px;
+}
+
+.product-desc{
+  font-size:14px;
+  color:#555;
+  margin-bottom:8px;
+  padding:0 10px;
+}
+
+.whatsapp-link{
+  display:none;
+  margin-bottom:10px;
+}
+
+.whatsapp-link a{
+  text-decoration:none;
+  background: var(--whatsapp-color);
+  color:white;
+  padding:8px 15px;
+  border-radius:8px;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  font-weight:bold;
+  transition:0.3s;
+}
+
+.whatsapp-link a:hover{ background:#1ebe57; }
+
+#adminBtn{
+  position: fixed;
+  bottom:20px;
+  right:20px;
+  background:#007bff;
+  color:white;
+  border:none;
+  border-radius:50%;
+  width:50px;
+  height:50px;
+  font-size:22px;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
+  z-index:10000;
+}
+
+.edit-box{
+  display:none;
+  position:absolute;
+  top:10px;
+  left:10px;
+  background:#fff;
+  border:1px solid #ccc;
+  border-radius:10px;
+  padding:10px;
+  z-index:100;
+  width:90%;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+}
+
+.edit-box input, .edit-box textarea{
+  width:100%;
+  margin:5px 0;
+  padding:5px;
+  border-radius:5px;
+  border:1px solid #aaa;
+}
+
+.edit-box button{
+  margin-top:5px;
+  padding:5px 10px;
+  border:none;
+  border-radius:5px;
+  background:#007bff;
+  color:white;
+  cursor:pointer;
+}
+
+.dragging{
+  opacity:0.5;
+  border:2px dashed #007bff;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <img id="storeLogo" src="https://i.imgur.com/9Y5Gh5b.png" alt="شعار المتجر">
+  <div id="storeDesc">أفضل متجر موبايلات حديث</div>
+</header>
+
+<div id="productList"></div>
+<button id="adminBtn">⚙</button>
+
+<script>
+const ADMIN_PASSWORD="mobishop2025";
+let isAdmin=false;
+
+// المنتجات الافتراضية
+let products=[
+  {name:"iPhone 17", desc:"أحدث إصدار", price:"1500000", whatsapp:"9647508597669", img:"https://i.imgur.com/5X6tKx3.jpg"},
+  {name:"Samsung S25", desc:"هاتف ممتاز", price:"1200000", whatsapp:"9647508597669", img:"https://i.imgur.com/Jy6PXbG.jpg"},
+  {name:"Xiaomi 14", desc:"سعر مناسب", price:"900000", whatsapp:"9647508597669", img:"https://i.imgur.com/fq6dZ0M.jpg"}
+];
+
+// الشعار والوصف
+let storeLogo=localStorage.getItem("storeLogo")||"https://i.imgur.com/9Y5Gh5b.png";
+let storeDesc=localStorage.getItem("storeDesc")||"أفضل متجر موبايلات حديث";
+
+// عرض الشعار والوصف
+function renderHeader(){
+  document.getElementById("storeLogo").src=storeLogo;
+  document.getElementById("storeDesc").innerText=storeDesc;
+}
+
+// عرض المنتجات
+function renderProducts(){
+  const list=document.getElementById("productList");
+  list.innerHTML="";
+  products.forEach((p,index)=>{
+    const div=document.createElement("div");
+    div.className="product";
+    div.innerHTML=`
+      <img src="${p.img}" alt="${p.name}">
+      <div class="product-name">${p.name}</div>
+      <div class="product-desc">${p.desc}</div>
+      <div class="product-price">${p.price} IQD</div>
+      <div class="whatsapp-link"><a href="https://wa.me/${p.whatsapp}" target="_blank">واتساب</a></div>
+    `;
+
+    // فتح رابط واتساب عند النقر
+    div.querySelector("img").addEventListener("click", e=>{
+      if(!isAdmin){
+        const link=div.querySelector(".whatsapp-link");
+        link.style.display=link.style.display==="block"?"none":"block";
+      }
+    });
+
+    // فقط للأدمن: عند الضغط على أي منتج يظهر بوكس التعديل
+    if(isAdmin){
+      div.addEventListener("click", e=>{
+        if(div.querySelector(".edit-box")) return;
+        const box=document.createElement("div");
+        box.className="edit-box";
+        box.innerHTML=`
+          <input placeholder="اسم المنتج" value="${p.name}" class="edit-name">
+          <textarea placeholder="وصف المنتج" class="edit-desc">${p.desc}</textarea>
+          <input placeholder="السعر" value="${p.price}" class="edit-price">
+          <input placeholder="رقم واتساب" value="${p.whatsapp}" class="edit-whats">
+          <button class="saveBtn">حفظ</button>
+        `;
+        div.appendChild(box);
+        box.style.display="block";
+        box.querySelector(".saveBtn").onclick=()=>{
+          p.name=box.querySelector(".edit-name").value;
+          p.desc=box.querySelector(".edit-desc").value;
+          p.price=box.querySelector(".edit-price").value;
+          p.whatsapp=box.querySelector(".edit-whats").value;
+          localStorage.setItem("products",JSON.stringify(products));
+          renderProducts();
+        };
+      });
+    }
+
+    // Drag & Drop لإعادة ترتيب المنتجات
+    div.setAttribute('draggable', true);
+    div.addEventListener('dragstart', e=>{
+      div.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', index);
+    });
+    div.addEventListener('dragend', e=>{
+      div.classList.remove('dragging');
+    });
+
+    list.appendChild(div);
+  });
+
+  // السماح بإسقاط المنتجات لإعادة ترتيب
+  list.addEventListener('dragover', e=>{
+    e.preventDefault();
+    const dragging=document.querySelector('.dragging');
+    const afterElement=getDragAfterElement(list,e.clientY);
+    if(afterElement==null){
+      list.appendChild(dragging);
+    } else{
+      list.insertBefore(dragging,afterElement);
+    }
+  });
+}
+
+function getDragAfterElement(container,y){
+  const draggableEls=[...container.querySelectorAll('.product:not(.dragging)')];
+  return draggableEls.reduce((closest,child)=>{
+    const box=child.getBoundingClientRect();
+    const offset=y-(box.top+box.height/2);
+    if(offset<0 && offset>closest.offset){
+      return {offset:offset,element:child};
+    } else return closest;
+  },{offset:Number.NEGATIVE_INFINITY}).element;
+}
+
+// زر الأدمن
+document.getElementById("adminBtn").addEventListener("click", ()=>{
+  const pass=prompt("أدخل كلمة السر:");
+  if(pass===ADMIN_PASSWORD){
+    isAdmin=true;
+    alert("تم الدخول كأدمن، اضغط على أي منتج أو شعار للتعديل");
+    renderProducts();
+    renderHeader();
+
+    // تعديل الشعار عند الضغط عليه
+    document.getElementById("storeLogo").addEventListener("click", ()=>{
+      const fileInput=document.createElement('input');
+      fileInput.type='file';
+      fileInput.accept='image/*';
+      fileInput.onchange=e=>{
+        const reader=new FileReader();
+        reader.onload=()=>{ storeLogo=reader.result; localStorage.setItem("storeLogo",storeLogo); renderHeader(); };
+        reader.readAsDataURL(e.target.files[0]);
+      };
+      fileInput.click();
+    });
+
+    // تعديل الوصف عند الضغط عليه
+    document.getElementById("storeDesc").addEventListener("click", ()=>{
+      const desc=prompt("وصف المتجر:",storeDesc);
+      if(desc!==null){ storeDesc=desc; localStorage.setItem("storeDesc",storeDesc); renderHeader(); }
+    });
+
+  } else alert("❌ كلمة السر خاطئة");
+});
+
+renderHeader();
+renderProducts();
+</script>
+</body>
+</html>
